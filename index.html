@@ -112,7 +112,7 @@
       eventMouseout: function(event, jsEvent, view) {
         // Remove the code for removing the task description on mouseout
       }
-
+    });
         function saveAddedTasks(addedTasks) {
     localStorage.setItem('addedTasks', JSON.stringify(addedTasks));
   }
@@ -146,8 +146,6 @@
     }
     calendar.fullCalendar('unselect');
   }
-    });
-
     // Button to delete all tasks in the selected month
     const deleteMonthTasksButton = $('<div class="delete-month-tasks">Delete All Tasks in Last Month</div>');
     deleteMonthTasksButton.on('click', function() {
