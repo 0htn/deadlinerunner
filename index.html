@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Calendar</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    #calendar {
+      max-width: 70%;
+      margin-right: 20px;
+    }
+    #task-list {
+      flex: 1;
+    }
+    .fc-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .task-container {
+      margin-bottom: 10px;
+    }
+    .task-item {
+      list-style-type: none;
+      margin: 5px 0;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    .task-item:hover {
+      background-color: #f0f0f0; /* Change this color to your preference */
+    }
+    .task-checkbox {
+      margin-right: 10px;
+    }
+    .completed {
+      text-decoration: line-through;
+      color: #888888; /* Change this color to your preference */
+    }
+    .remove-button {
+      margin-left: 10px;
+      cursor: pointer;
+      color: red;
+    }
+    .countdown {
+      margin-left: 10px;
+    }
+    .delete-month-tasks {
+      margin-top: 10px;
+      cursor: pointer;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<div id="calendar"></div>
+<div id="task-list"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const calendar = $('#calendar').fullCalendar({
+      header: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'month,agendaWeek,agendaDay'
+      },
+      editable: true,
+      selectable: true,
+      selectHelper: true,
+      events: [],
+      select: function(start, end) {
+        const task = prompt('Enter task for ' + start.format('YYYY-MM-DD'));
+        if (task !== null) {
+          const color = prompt('Enter color for the task (e.g., red, green, blue):');
+          const eventData = {
+            title: task,
+            start: start,
+            end: end,
+            color: color,
+            textColor: '#ffffff' // Set text color to white for better visibility
+          };
+          calendar.fullCalendar('renderEvent', eventData, true); // stick? = true
+          updateTaskList();
+        }
+        calendar.fullCalendar('unselect');
+      },
+      eventClick: function(event) {
+        const newTask = prompt('Edit task:', event.title);
+        if (newTask !== null) {
+          event.title = newTask;
+          calendar.fullCalendar('updateEvent', event);
+          updateTaskList();
+        }
+      },
+      eventRender: function(event, element) {
+        element.find('.fc-title').html('<span style="color:' + event.color + ';">' + event.title + '</span>');
+      },
+      eventMouseover: function(event, jsEvent, view) {
+        // Remove the code for displaying the task description on hover
+      },
+      eventMouseout: function(event, jsEvent, view) {
+        // Remove the code for removing the task description on mouseout
+      }
+    });
+
+    // Button to delete all tasks in the selected month
+    const deleteMonthTasksButton = $('<div class="delete-month-tasks">Delete All Tasks in Last Month</div>');
+    deleteMonthTasksButton.on('click', function() {
+      const currentView = calendar.fullCalendar('getView');
+      const confirmDelete = confirm('Are you sure you want to delete all tasks in ' + currentView.title + '?');
+      if (confirmDelete) {
+        const eventsToDelete = calendar.fullCalendar('clientEvents', function(event) {
+          return moment(event.start).isSame(currentView.start, 'month');
+        });
+        eventsToDelete.forEach(function(event) {
+          calendar.fullCalendar('removeEvents', event._id);
+        });
+        updateTaskList();
+      }
+    });
+    $('#calendar').append(deleteMonthTasksButton);
+
+    function updateTaskList() {
+      const taskListContainer = $('#task-list');
+      taskListContainer.empty();
+
+      const events = calendar.fullCalendar('clientEvents');
+      const groupedTasks = groupTasksByDate(events);
+
+      // Sort tasks based on due date
+      const sortedDates = Object.keys(groupedTasks).sort((a, b) => {
+        const aMoment = moment(a);
+        const bMoment = moment(b);
+
+        if (aMoment.isSameOrAfter(moment(), 'day') && bMoment.isSameOrAfter(moment(), 'day')) {
+          return aMoment.diff(bMoment);
+        }
+
+        if (aMoment.isSameOrAfter(moment(), 'day')) {
+          return -1;
+        }
+
+        if (bMoment.isSameOrAfter(moment(), 'day')) {
+          return 1;
+        }
+
+        return aMoment.diff(bMoment);
+      });
+
+      for (const date of sortedDates) {
+        const tasks = groupedTasks[date];
+
+        const taskContainer = $('<div class="task-container"></div>');
+        const dateHeading = $('<h3>' + date + '</h3>');
+        taskContainer.append(dateHeading);
+
+        const taskList = $('<ul></ul>');
+        tasks.forEach(task => {
+          const taskItem = $('<li class="task-item"></li>');
+          const checkbox = $('<input type="checkbox" class="task-checkbox">');
+          const taskLabel = $('<label style="color: ' + task.color + ';">' + task.title + '</label>');
+          const removeButton = $('<span class="remove-button" data-date="' + date + '" data-title="' + task.title + '">&times;</span>');
+          const countdown = $('<span class="countdown"></span>');
+
+          checkbox.on('change', function() {
+            if ($(this).prop('checked')) {
+              taskLabel.addClass('completed');
+              markTaskCompleted(date, task.title);
+            } else {
+              taskLabel.removeClass('completed');
+              markTaskIncomplete(date, task.title);
+            }
+          });
+
+          removeButton.on('click', function() {
+            removeTask($(this).data('date'), $(this).data('title'));
+          });
+
+          taskItem.on('click', function() {
+            // Remove the 'selected-task' class from all task items
+            $('.task-item').removeClass('selected-task');
+            // Add the 'selected-task' class to the clicked task item
+            $(this).addClass('selected-task');
+          });
+
+          if (isTaskCompleted(date, task.title)) {
+            checkbox.prop('checked', true);
+            taskLabel.addClass('completed');
+          }
+
+          const endTime = moment(date + ' 23:59:59');
+          const timeRemaining = endTime.diff(moment(), 'minutes');
+          if (timeRemaining > 0) {
+            countdown.text('Due in: ' + formatTimeRemaining(timeRemaining));
+          } else {
+            countdown.text('Past due');
+          }
+
+          taskItem.append(checkbox);
+          taskItem.append(taskLabel);
+          taskItem.append(removeButton);
+          taskItem.append(countdown);
+          taskList.append(taskItem);
+        });
+
+        taskContainer.append(taskList);
+        taskListContainer.append(taskContainer);
+      }
+    }
+
+    function groupTasksByDate(tasks) {
+      const groupedTasks = {};
+
+      tasks.forEach(task => {
+        const date = moment(task.start).format('YYYY-MM-DD');
+        if (!groupedTasks[date]) {
+          groupedTasks[date] = [];
+        }
+        groupedTasks[date].push({ title: task.title, color: task.color });
+      });
+
+      return groupedTasks;
+    }
+
+    function markTaskCompleted(date, taskTitle) {
+      const completedTasks = getCompletedTasks();
+      if (!completedTasks[date]) {
+        completedTasks[date] = [];
+      }
+      completedTasks[date].push(taskTitle);
+      saveCompletedTasks(completedTasks);
+    }
+
+    function markTaskIncomplete(date, taskTitle) {
+      const completedTasks = getCompletedTasks();
+      if (completedTasks[date]) {
+        completedTasks[date] = completedTasks[date].filter(title => title !== taskTitle);
+        saveCompletedTasks(completedTasks);
+      }
+    }
+
+    function isTaskCompleted(date, taskTitle) {
+      const completedTasks = getCompletedTasks();
+      return completedTasks[date] && completedTasks[date].includes(taskTitle);
+    }
+
+    function getCompletedTasks() {
+      const storedData = localStorage.getItem('completedTasks');
+      return storedData ? JSON.parse(storedData) : {};
+    }
+
+    function saveCompletedTasks(completedTasks) {
+      localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+    }
+
+    function removeTask(date, taskTitle) {
+      const events = calendar.fullCalendar('clientEvents');
+      const taskToRemove = events.find(event => moment(event.start).format('YYYY-MM-DD') === date && event.title === taskTitle);
+
+      if (taskToRemove) {
+        calendar.fullCalendar('removeEvents', taskToRemove._id);
+        updateTaskList();
+      }
+    }
+
+    function formatTimeRemaining(minutes) {
+      const days = Math.floor(minutes / (24 * 60));
+      const hours = Math.floor((minutes % (24 * 60)) / 60);
+      const remainingMinutes = minutes % 60;
+      let result = '';
+      
+      if (days > 0) {
+        result += days + 'd ';
+      }
+      
+      if (hours > 0) {
+        result += hours + 'h ';
+      }
+      
+      result += remainingMinutes + 'm';
+      
+      return result;
+    }
+  });
+</script>
+
+</body>
+</html>
