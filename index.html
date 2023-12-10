@@ -113,39 +113,6 @@
         // Remove the code for removing the task description on mouseout
       }
     });
-        function saveAddedTasks(addedTasks) {
-    localStorage.setItem('addedTasks', JSON.stringify(addedTasks));
-  }
-
-  function getAddedTasks() {
-    const storedData = localStorage.getItem('addedTasks');
-    return storedData ? JSON.parse(storedData) : [];
-  }
-
-  function addTaskToStorage(task) {
-    const addedTasks = getAddedTasks();
-    addedTasks.push(task);
-    saveAddedTasks(addedTasks);
-  }
-
-  // Inside the select function where you prompt for a task
-  select: function(start, end) {
-    const task = prompt('Enter task for ' + start.format('YYYY-MM-DD'));
-    if (task !== null) {
-      const color = prompt('Enter color for the task (e.g., red, green, blue):');
-      const eventData = {
-        title: task,
-        start: start,
-        end: end,
-        color: color,
-        textColor: '#ffffff' // Set text color to white for better visibility
-      };
-      calendar.fullCalendar('renderEvent', eventData, true); // stick? = true
-      updateTaskList();
-      addTaskToStorage(eventData); // Save the added task to local storage
-    }
-    calendar.fullCalendar('unselect');
-  }
     // Button to delete all tasks in the selected month
     const deleteMonthTasksButton = $('<div class="delete-month-tasks">Delete All Tasks in Last Month</div>');
     deleteMonthTasksButton.on('click', function() {
@@ -324,13 +291,44 @@
       
       return result;
     }
-
-      // load added tasks from local storage
-  const addedTasks = getAddedTasks();
-  addedTasks.forEach(task => {
-    calendar.fullCalendar('renderEvent', task, true);
   });
-  updateTaskList();
+
+      // Load tasks from localStorage when the page loads
+    loadTasksFromStorage();
+
+    function loadTasksFromStorage() {
+      const storedTasks = localStorage.getItem('tasks');
+      if (storedTasks) {
+        const tasks = JSON.parse(storedTasks);
+
+        tasks.forEach(task => {
+          calendar.fullCalendar('renderEvent', {
+            title: task.title,
+            start: task.start,
+            end: task.end,
+            color: task.color,
+            textColor: '#ffffff'
+          }, true);
+        });
+
+        updateTaskList();
+      }
+    }
+
+    function saveTasksToStorage() {
+      const events = calendar.fullCalendar('clientEvents');
+      const tasks = events.map(event => ({
+        title: event.title,
+        start: event.start.format(),
+        end: event.end.format(),
+        color: event.color
+      }));
+
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Save tasks to localStorage before refreshing or leaving the page
+    window.addEventListener('beforeunload', saveTasksToStorage);
   });
 </script>
 
