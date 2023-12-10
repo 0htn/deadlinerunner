@@ -117,7 +117,7 @@
     const deleteMonthTasksButton = $('<div class="delete-month-tasks">Delete All Tasks in Last Month</div>');
     deleteMonthTasksButton.on('click', function() {
       const currentView = calendar.fullCalendar('getView');
-      const confirmDelete = confirm('Are you sure you want to delete all tasks in ' + currentView.title + '?');
+      const confirmDelete = confirm('Are you sure you want to delete all tasks in last month' + '?');
       if (confirmDelete) {
         const eventsToDelete = calendar.fullCalendar('clientEvents', function(event) {
           return moment(event.start).isSame(currentView.start, 'month');
