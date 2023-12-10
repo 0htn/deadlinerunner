@@ -112,6 +112,40 @@
       eventMouseout: function(event, jsEvent, view) {
         // Remove the code for removing the task description on mouseout
       }
+
+        function saveAddedTasks(addedTasks) {
+    localStorage.setItem('addedTasks', JSON.stringify(addedTasks));
+  }
+
+  function getAddedTasks() {
+    const storedData = localStorage.getItem('addedTasks');
+    return storedData ? JSON.parse(storedData) : [];
+  }
+
+  function addTaskToStorage(task) {
+    const addedTasks = getAddedTasks();
+    addedTasks.push(task);
+    saveAddedTasks(addedTasks);
+  }
+
+  // Inside the select function where you prompt for a task
+  select: function(start, end) {
+    const task = prompt('Enter task for ' + start.format('YYYY-MM-DD'));
+    if (task !== null) {
+      const color = prompt('Enter color for the task (e.g., red, green, blue):');
+      const eventData = {
+        title: task,
+        start: start,
+        end: end,
+        color: color,
+        textColor: '#ffffff' // Set text color to white for better visibility
+      };
+      calendar.fullCalendar('renderEvent', eventData, true); // stick? = true
+      updateTaskList();
+      addTaskToStorage(eventData); // Save the added task to local storage
+    }
+    calendar.fullCalendar('unselect');
+  }
     });
 
     // Button to delete all tasks in the selected month
@@ -292,6 +326,13 @@
       
       return result;
     }
+
+      // load added tasks from local storage
+  const addedTasks = getAddedTasks();
+  addedTasks.forEach(task => {
+    calendar.fullCalendar('renderEvent', task, true);
+  });
+  updateTaskList();
   });
 </script>
 
