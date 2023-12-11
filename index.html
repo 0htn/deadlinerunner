@@ -320,6 +320,17 @@
       }
     }
 
+  // To delete all tasks of all time
+  const clearAllTasks = $('<div class="clearAllTasks"> Clear All Tasks</div>');
+  clearAllTasks.on('click', function() {
+    const confirmDeleteAll = confirm('Are you sure you want to delete all tasks of all time?');
+    if (confirmDeleteAll) {
+      calendar.fullCalendar('removeEvents');
+      updateTaskList();
+    }
+  });
+  $('body').append(clearAllTasks);
+    
     function saveTasksToStorage() {
       const events = calendar.fullCalendar('clientEvents');
       const tasks = events.map(event => ({
@@ -335,16 +346,6 @@
     // Save tasks to localStorage before refreshing or leaving the page
     window.addEventListener('beforeunload', saveTasksToStorage);
 
-  // To delete all tasks of all time
-  const clearAllTasks = $('<div class="clearAllTasks"> Clear All Tasks</div>');
-  clearAllTasks.on('click', function() {
-    const confirmDeleteAll = confirm('Are you sure you want to delete all tasks of all time?');
-    if (confirmDeleteAll) {
-      calendar.fullCalendar('removeEvents');
-      updateTaskList();
-    }
-  });
-  $('body').append(clearAllTasks);
   });
 
 </script>
