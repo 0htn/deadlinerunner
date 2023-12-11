@@ -57,6 +57,11 @@
       cursor: pointer;
       color: red;
     }
+   .clearAllTasks {
+      margin-top: auto;
+      cursor: pointer;
+      color: red;
+   }
   </style>
 </head>
 <body>
@@ -113,6 +118,7 @@
         // Remove the code for removing the task description on mouseout
       }
     });
+
     // Button to delete all tasks in the selected month
     const deleteMonthTasksButton = $('<div class="delete-month-tasks">Delete All Tasks in Last Month</div>');
     deleteMonthTasksButton.on('click', function() {
@@ -278,17 +284,17 @@
       const hours = Math.floor((minutes % (24 * 60)) / 60);
       const remainingMinutes = minutes % 60;
       let result = '';
-      
+     
       if (days > 0) {
         result += days + 'd ';
       }
-      
+     
       if (hours > 0) {
         result += hours + 'h ';
       }
-      
+     
       result += remainingMinutes + 'm';
-      
+     
       return result;
     }
 
@@ -328,9 +334,19 @@
 
     // Save tasks to localStorage before refreshing or leaving the page
     window.addEventListener('beforeunload', saveTasksToStorage);
+
+  // To delete all tasks of all time
+  const clearAllTasks = $('<div class="clearAllTasks"> Clear All Tasks</div>');
+  clearAllTasks.on('click', function() {
+    const confirmDeleteAll = confirm('Are you sure you want to delete all tasks of all time?');
+    if (confirmDeleteAll) {
+      calendar.fullCalendar('removeEvents');
+      updateTaskList();
+    }
+  });
+  $('body').append(clearAllTasks);
   });
 
 </script>
-
 </body>
 </html>
